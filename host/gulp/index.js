@@ -3,7 +3,7 @@ import gutil from 'gulp-util';
 import webpack from 'webpack';
 import notifier from 'node-notifier';
 import superb from 'superb'
-import { Childminder } from 'childminder';
+import { spawn } from 'child_process';
 import {
   rendererBuildServerPort,
 } from '../config';
@@ -40,7 +40,6 @@ function notifyCompileResult(name, statsJson) {
   }
 }
 
-const cm = new Childminder();
 const electronBinary = `${__dirname}/../node_modules/.bin/electron`;
 
 gulp.task('run:renderer', () => {
@@ -63,13 +62,17 @@ gulp.task('run:main', ['run:renderer'], async () => {
   });
 
   const output = `${config.output.path}/${config.output.filename}`;
-  const child = cm.create(electronBinary, [output], { lazy: true });
+  let child;
 
-  child.startOrRestart();
+  function restartProcess() {
+    if (child) child.kill();
+    child = spawn(electronBinary, [output], { stdio: 'inherit' });
+  }
+  restartProcess();
 
   gulp.watch(output).on('change', () => {
     gutil.log('Restart main...');
-    child.startOrRestart();
+    restartProcess();
   });
 });
 
@@ -87,19 +90,20 @@ gulp.task('run:service', async () => {
   });
 
   const output = `${config.output.path}/${config.output.filename}`;
-  const child = cm.create(electronBinary, [output], {
-    env: {
-      ELECTRON_RUN_AS_NODE: true,
-    },
-  });
+  let child;
 
-  child.terminal.on('exit', function () {
-    console.log(arguments);
-  });
+  function restartProcess() {
+    if (child) child.kill();
+    child = spawn(electronBinary, [output], {
+      env: { ELECTRON_ENABLE_STACK_DUMPING: true },
+      stdio: 'inherit',
+    });
+  }
+  restartProcess();
 
   gulp.watch(output).on('change', () => {
     gutil.log('Restart service...');
-    child.startOrRestart();
+    restartProcess();
   });
 });
 
