@@ -1,0 +1,3 @@
+[submodule "host/addon/libusb"]
+	path = host/addon/libusb
+	url = https://github.com/libusb/libusb
