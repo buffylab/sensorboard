@@ -12,7 +12,7 @@
         '<!(node -e \'require("nan")\')',
       ],
       'dependencies': [
-        'addon/libusb.gypi:libusb',
+        'addon/externals/libusb.gypi:libusb',
       ],
     },
   ],
