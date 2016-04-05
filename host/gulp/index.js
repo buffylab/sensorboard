@@ -43,7 +43,7 @@ function notifyCompileResult(name, statsJson) {
   }
 }
 
-gulp.task('build:addon', done => {
+function buildAddon(debug, done) {
   const gyp = path.resolve(
     path.dirname(require.resolve('npm/package.json')),
     `bin/node-gyp-bin/${os.platform() === 'win32' ? 'node-gyp.cmd' : 'node-gyp'}`
@@ -53,14 +53,17 @@ gulp.task('build:addon', done => {
     'rebuild',
     `--target=${pkg.devDependencies['electron-prebuilt']}`,
     '--dist-url=https://atom.io/download/atom-shell',
-  ], {
+  ].concat(debug ? ['--debug'] : []), {
     stdio: 'inherit',
     cwd: path.resolve(__dirname, '..'),
     env: Object.assign({}, process.env, {
       HOME: path.resolve(__dirname, '../.electron-gyp'),
     }),
   }).on('close', code => code === 0 ? done() : done(new Error(`exit code = ${code}`)));
-});
+}
+
+gulp.task('build:addon:debug', done => buildAddon(true, done));
+gulp.task('build:addon:release', done => buildAddon(false, done));
 
 const electronBinary = path.resolve(root,
   os.platform() === 'win32' ? 'node_modules/.bin/electron.cmd' : 'node_modules/.bin/electron'
@@ -90,7 +93,9 @@ gulp.task('run:main', ['run:renderer'], async () => {
 
   function restartProcess() {
     if (child) child.kill();
-    child = spawn(electronBinary, [output], { stdio: 'inherit' });
+    child = spawn(electronBinary, [output]);
+    child.stdout.on('data', data => process.stdout.write(data));
+    child.stderr.on('data', data => process.stderr.write(data));
   }
   restartProcess();
 
@@ -122,8 +127,9 @@ gulp.task('run:service', async () => {
       env: Object.assign({}, process.env, {
         ELECTRON_ENABLE_STACK_DUMPING: true,
       }),
-      stdio: 'inherit',
     });
+    child.stdout.on('data', data => process.stdout.write(data));
+    child.stderr.on('data', data => process.stderr.write(data));
     child.on('exit', code => {
       console.log(`service process exit (code = ${code})`);
     });
