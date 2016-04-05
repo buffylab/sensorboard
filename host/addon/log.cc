@@ -1,78 +1,79 @@
+#include <stdarg.h>
 #include <sstream>
 #include "log.h"
 
-LogLevel g_log_level = LogLevel::TRACE;
+LogLevel g_log_level = LogLevel::LL_TRACE;
 
 static void Log(enum LogLevel level, const char *level_label, const char *format, va_list args) {
   std::stringstream str_stream;
   str_stream << "[" << level_label << "] " << format << "\n";
 
   const char* new_format = str_stream.str().c_str();
-	vfprintf(level < LogLevel::ERROR ? stdout : stderr, new_format, args);
+	vfprintf(level < LogLevel::LL_ERROR ? stdout : stderr, new_format, args);
 }
 
-namespace log {
+namespace nlog {
   void SetLogSevel(LogLevel level) {
     g_log_level = level;
   }
 
   void Fatal(const char *format, ...) {
-    if(g_log_level > LogLevel::FATAL)
+    if(g_log_level > LogLevel::LL_FATAL)
       return;
 
     va_list args;
   	va_start(args, format);
-    Log(LogLevel::FATAL, "FATAL", format, args);
+    Log(LogLevel::LL_FATAL, "FATAL", format, args);
   	va_end(args);
   }
 
   void Error(const char *format, ...) {
-    if(g_log_level < LogLevel::ERROR)
+    if(g_log_level < LogLevel::LL_ERROR)
       return;
 
     va_list args;
   	va_start(args, format);
-    Log(LogLevel::ERROR, "ERROR", format, args);
+    Log(LogLevel::LL_ERROR, "ERROR", format, args);
   	va_end(args);
   }
 
   void Warn(const char *format, ...) {
-    if(g_log_level < LogLevel::WARN)
+    if(g_log_level < LogLevel::LL_WARN)
       return;
 
     va_list args;
   	va_start(args, format);
-    Log(LogLevel::WARN, "WARN", format, args);
+    Log(LogLevel::LL_WARN, "WARN", format, args);
   	va_end(args);
   }
 
   void Info(const char *format, ...) {
-    if(g_log_level < LogLevel::INFO)
+    if(g_log_level < LogLevel::LL_INFO)
       return;
 
     va_list args;
   	va_start(args, format);
-    Log(LogLevel::INFO, "INFO", format, args);
+    Log(LogLevel::LL_INFO, "INFO", format, args);
   	va_end(args);
   }
 
   void Debug(const char *format, ...) {
-    if(g_log_level < LogLevel::DEBUG)
+    if(g_log_level < LogLevel::LL_DEBUG)
       return;
 
     va_list args;
   	va_start(args, format);
-    Log(LogLevel::DEBUG, "DEBUG", format, args);
+    Log(LogLevel::LL_DEBUG, "DEBUG", format, args);
   	va_end(args);
   }
 
   void Trace(const char *format, ...) {
-    if(g_log_level < LogLevel::TRACE)
+    if(g_log_level < LogLevel::LL_TRACE)
       return;
 
     va_list args;
   	va_start(args, format);
-    Log(LogLevel::TRACE, "TRACE", format, args);
+    Log(LogLevel::LL_TRACE, "TRACE", format, args);
   	va_end(args);
   }
 }

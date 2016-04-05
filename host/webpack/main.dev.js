@@ -1,7 +1,8 @@
 const webpack = require('webpack');
 const _ = require('lodash');
-
-const root = `${__dirname}/..`;
+const path = require('path');
+const config = require('../config');
+const root = config.root;
 
 const babelOptions = JSON.stringify({
   presets: [
@@ -19,10 +20,10 @@ const babelOptions = JSON.stringify({
 module.exports = {
   target: 'electron',
 
-  entry: `${root}/src/main/entry.js`,
+  entry: path.resolve(root, 'src/main/entry.js'),
 
   output: {
-    path: `${root}/out/development`,
+    path: path.resolve(root, 'out/development'),
     filename: 'main.js',
     libraryTarget: 'commonjs2',
   },

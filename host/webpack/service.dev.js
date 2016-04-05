@@ -1,8 +1,9 @@
 const webpack = require('webpack');
 const fs = require('fs');
 const _ = require('lodash');
-
-const root = `${__dirname}/..`;
+const path = require('path');
+const config = require('../config');
+const root = config.root;
 
 const babelOptions = JSON.stringify({
   presets: [
@@ -20,10 +21,10 @@ const babelOptions = JSON.stringify({
 module.exports = {
   target: 'node',
 
-  entry: `${root}/src/service/entry.js`,
+  entry: path.resolve(root, 'src/service/entry.js'),
 
   output: {
-    path: `${root}/out/development`,
+    path: path.resolve(root, 'out/development'),
     filename: 'service.js',
     libraryTarget: 'commonjs2',
   },

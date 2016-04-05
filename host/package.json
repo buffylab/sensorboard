@@ -10,14 +10,13 @@
     "test-watch": "npm test -- --watch",
     "test-e2e": "cross-env NODE_ENV=test mocha --compilers js:babel-core/register --require ./test/setup.js ./test/e2e.js",
     "preinstall": "echo 'Skip default node-gyp rebuild'",
-    "build:addon": "HOME=~/.electron-gyp node-gyp rebuild --target=$npm_package_devDependencies_electron_prebuilt --arch=x64 --dist-url=https://atom.io/download/atom-shell",
+    "build:addon": "gulp build:addon",
     "build:main": "webpack --config webpack/main.prod.js --progress --profile --colors",
     "build:renderer": "webpack --config webpack/renderer.prod.js --progress --profile --colors",
     "build:service": "webpack --config webpack/service.prod.js --progress --profile --colors",
     "build": "npm run build:addon && npm run build:main && npm run build:renderer && npm run build:service",
     "prepublish": "electron-rebuild && npm run build",
-    "start": "gulp run",
-    "postinstall": "node node_modules/fbjs-scripts/node/check-dev-engines.js package.json"
+    "start": "gulp run"
   },
   "repository": {
     "type": "git",

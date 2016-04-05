@@ -72,7 +72,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
   libusb_device_handle *handle = nullptr;
 	if ((ret = libusb_open(dev, &handle)) != 0) {
     state_ = UsbDeviceState::STOPPED;
-    snprintf(buf, MSG_BUFFER_SIZE, "libusb_open failed: %s", libusb_error_name(ret));
+    sprintf(buf, "libusb_open failed: %s", libusb_error_name(ret));
     error_ = buf;
 		return;
 	}
@@ -82,7 +82,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
     libusb_close(handle);
 
     state_ = UsbDeviceState::STOPPED;
-    snprintf(buf, MSG_BUFFER_SIZE, "libusb_get_configuration failed: %s", libusb_error_name(ret));
+    sprintf(buf, "libusb_get_configuration failed: %s", libusb_error_name(ret));
     error_ = buf;
     return;
   }
@@ -96,7 +96,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
     libusb_close(handle);
 
     state_ = UsbDeviceState::STOPPED;
-		snprintf(buf, MSG_BUFFER_SIZE, "libusb_get_active_config_descriptor failed: %s", libusb_error_name(ret));
+		sprintf(buf, "libusb_get_active_config_descriptor failed: %s", libusb_error_name(ret));
     error_ = buf;
 		return;
 	}
@@ -106,7 +106,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
 		libusb_free_config_descriptor(cdesc);
 
     state_ = UsbDeviceState::STOPPED;
-		snprintf(buf, MSG_BUFFER_SIZE, "Invalid cdesc->bNumInterfaces: %d", cdesc->bNumInterfaces);
+		sprintf(buf, "Invalid cdesc->bNumInterfaces: %d", cdesc->bNumInterfaces);
     error_ = buf;
 		return;
 	}
@@ -120,7 +120,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
 		libusb_free_config_descriptor(cdesc);
 
     state_ = UsbDeviceState::STOPPED;
-    snprintf(buf, MSG_BUFFER_SIZE, "Invalid interface.num_altsetting: %d", interface.num_altsetting);
+    sprintf(buf, "Invalid interface.num_altsetting: %d", interface.num_altsetting);
     error_ = buf;
 		return;
 	}
@@ -148,7 +148,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
     libusb_free_config_descriptor(cdesc);
 
     state_ = UsbDeviceState::STOPPED;
-    snprintf(buf, MSG_BUFFER_SIZE, "Cannot find endpoint: (in: %s, out: %s)",
+    sprintf(buf, "Cannot find endpoint: (in: %s, out: %s)",
       endpoint_in_found ? "true" : "false",
       endpoint_out_found ? "true" : "false");
     error_ = buf;
@@ -168,39 +168,42 @@ void UsbDevice::Start() {
   int ret;
 
   if ((ret = libusb_claim_interface(handle_, ANDROID_USB_INTERFACE_NUM)) != 0) {
-		libusb_close(handle_);
+    libusb_close(handle_);
     handle_ = nullptr;
 
     state_ = UsbDeviceState::STOPPED;
-    snprintf(msg, MSG_BUFFER_SIZE, "libusb_claim_interface failed: %s", libusb_error_name(ret));
+    sprintf(msg, "libusb_claim_interface failed: %s", libusb_error_name(ret));
     error_ = msg;
-		return;
-	}
+    return;
+  }
 
   async_ = new uv_async_t;
   if ((ret = uv_async_init(uv_default_loop(), async_, AsyncCallback)) != 0) {
     async_ = nullptr;
 
     state_ = UsbDeviceState::STOPPED;
-    snprintf(msg, MSG_BUFFER_SIZE, "uv_async_init failed: %d", ret);
+    sprintf(msg, "uv_async_init failed: %d", ret);
     error_ = msg;
-		return;
+    return;
   }
   async_->data = this;
 
   for (int i = 0; i < RX_LOOPS_NUM; ++i) {
-  	void *buf = malloc(USB_MRU);
-  	struct libusb_transfer *transfer = libusb_alloc_transfer(0);
-  	libusb_fill_bulk_transfer(transfer, handle_, endpoint_in_,
-      reinterpret_cast<unsigned char *>(buf), USB_MRU, RxCallback, this, 0);
-  	if((ret = libusb_submit_transfer(transfer)) != 0) {
-  		libusb_free_transfer(transfer);
+    void *buf = malloc(USB_MRU);
+    struct libusb_transfer *transfer = libusb_alloc_transfer(0);
+    libusb_fill_bulk_transfer(transfer, handle_, endpoint_in_,
+        reinterpret_cast<unsigned char *>(buf), USB_MRU, 
+	reinterpret_cast<libusb_transfer_cb_fn>(RxCallback), 
+	this, 0);
+
+    if((ret = libusb_submit_transfer(transfer)) != 0) {
+      libusb_free_transfer(transfer);
 
       state_ = UsbDeviceState::STOPPED;
-      snprintf(msg, MSG_BUFFER_SIZE, "libusb_submit_transfer failed: %s", libusb_error_name(ret));
+      sprintf(msg, "libusb_submit_transfer failed: %s", libusb_error_name(ret));
       error_ = msg;
-  		return;
-  	}
+      return;
+    }
 
     rx_transfers_.insert(transfer);
   }
@@ -299,7 +302,7 @@ void UsbDevice::Submit(const char* data, size_t size) {
 
   static char buf[128];
 
-  snprintf(buf, 128, "%d_%d", bus_, address_);
+  sprintf(buf, "%d_%d", bus_, address_);
 
   v8::Local<v8::Value> argv[] = {
     Nan::New(buf).ToLocalChecked(),
@@ -399,7 +402,7 @@ void AndroidUsb::Discover() {
   ssize_t cnt = libusb_get_device_list(context_, &list);
 
   if (cnt < 0) {
-    log::Error("libusb_get_device_list failed: %s", libusb_error_name(cnt));
+    nlog::Error("libusb_get_device_list failed: %s", libusb_error_name(cnt));
 
     uv_mutex_lock(&state_lock_);
     state_discover_failed_ = true;
@@ -522,7 +525,7 @@ void AndroidUsb::HandleStateOkCallback(const std::vector<UsbDeviceInfo>& device_
 
   for (auto& info : device_infos) {
   	v8::Local<v8::Object> v8_device = Nan::New<v8::Object>();
-    snprintf(buf, 128, "%d_%d", info.bus, info.address);
+    sprintf(buf, "%d_%d", info.bus, info.address);
   	v8_devices->ForceSet(V8STR(buf), v8_device);
 
   	STRUCT_TO_V8(v8_device, info, bus);
@@ -544,12 +547,12 @@ int AndroidUsb::Init() {
   int ret;
 
   if ((ret = uv_mutex_init(&state_lock_)) != 0) {
-    log::Fatal("uv_mutex_init failed: %d", ret);
+    nlog::Fatal("uv_mutex_init failed: %d", ret);
     return -1;
   }
 
   if ((ret = libusb_init(&context_)) != 0) {
-		log::Fatal("libusb_init failed: %s", libusb_error_name(ret));
+		nlog::Fatal("libusb_init failed: %s", libusb_error_name(ret));
 		return -1;
 	}
 
@@ -557,18 +560,18 @@ int AndroidUsb::Init() {
    * Init discover loop
    */
   if ((ret = uv_loop_init(&discover_loop_)) != 0) {
-		log::Fatal("uv_loop_init failed: %d", ret);
+		nlog::Fatal("uv_loop_init failed: %d", ret);
     return -1;
   }
 
   if ((ret = uv_async_init(&discover_loop_, &discover_async_, OnDiscoverRequest)) != 0) {
-		log::Fatal("uv_async_init failed: %d", ret);
+		nlog::Fatal("uv_async_init failed: %d", ret);
     return -1;
   }
   discover_async_.data = this;
 
   if ((ret = uv_thread_create(&discover_thread_, DiscoverThread, this)) != 0) {
-    log::Fatal("uv_thread_create failed: %d", ret);
+    nlog::Fatal("uv_thread_create failed: %d", ret);
     return -1;
   }
 
@@ -576,7 +579,7 @@ int AndroidUsb::Init() {
    * Init state update async
    */
   if ((ret = uv_async_init(uv_default_loop(), &update_state_async_, OnUpdateStateRequest)) != 0) {
-    log::Fatal("uv_async_init failed: %d", ret);
+    nlog::Fatal("uv_async_init failed: %d", ret);
     return -1;
   }
   update_state_async_.data = this;
@@ -608,7 +611,7 @@ void AndroidUsb::Start(Nan::Callback *on_update_state, Nan::Callback *on_submit)
 			(libusb_hotplug_flag)0, LIBUSB_HOTPLUG_MATCH_ANY, LIBUSB_HOTPLUG_MATCH_ANY, LIBUSB_HOTPLUG_MATCH_ANY,
 			HotplugCallback, this, nullptr
     )) != 0) {
-      log::Error("libusb_hotplug_register_callback failed: %s", libusb_error_name(ret));
+      nlog::Error("libusb_hotplug_register_callback failed: %s", libusb_error_name(ret));
     }
   } else {
 #ifdef WIN32
@@ -620,5 +623,5 @@ void AndroidUsb::Start(Nan::Callback *on_update_state, Nan::Callback *on_submit)
 
   RequestDiscover();
 
-  log::Debug("AndroidUsb::Start success");
+  nlog::Debug("AndroidUsb::Start success");
 }

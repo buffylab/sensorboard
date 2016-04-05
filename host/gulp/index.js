@@ -1,10 +1,13 @@
 import gulp from 'gulp';
 import gutil from 'gulp-util';
+import path from 'path';
+import os from 'os';
 import webpack from 'webpack';
 import notifier from 'node-notifier';
 import superb from 'superb'
 import { spawn } from 'child_process';
 import {
+  root,
   rendererBuildServerPort,
 } from '../config';
 
@@ -40,7 +43,25 @@ function notifyCompileResult(name, statsJson) {
   }
 }
 
-const electronBinary = `${__dirname}/../node_modules/.bin/electron`;
+gulp.task('build:addon', done => {
+  const gyp = path.resolve(
+    path.dirname(require.resolve('npm/package.json')),
+    `bin/node-gyp-bin/${os.platform() === 'win32' ? 'node-gyp.cmd' : 'node-gyp'}`
+  );
+  const pkg = require('../package.json');
+  spawn(gyp, [
+    'rebuild',
+    `--target=${pkg.devDependencies['electron-prebuilt']}`,
+    '--dist-url=https://atom.io/download/atom-shell',
+  ], { 
+    stdio: 'inherit',
+    env: { HOME: path.resolve(__dirname, '../.electron-gyp') },
+  }).on('close', code => code === 0 ? done() : done(new Error(`exit code = %{code}`)));
+});
+
+const electronBinary = path.resolve(root, 
+  os.platform() === 'win32' ? 'node_modules/.bin/electron.cmd' : 'node_modules/.bin/electron'
+);
 
 gulp.task('run:renderer', () => {
   const { default: runHotServer } = require('./runHotServer');
@@ -61,7 +82,7 @@ gulp.task('run:main', ['run:renderer'], async () => {
     });
   });
 
-  const output = `${config.output.path}/${config.output.filename}`;
+  const output = path.join(config.output.path, config.output.filename);
   let child;
 
   function restartProcess() {
@@ -95,8 +116,13 @@ gulp.task('run:service', async () => {
   function restartProcess() {
     if (child) child.kill();
     child = spawn(electronBinary, [output], {
-      env: { ELECTRON_ENABLE_STACK_DUMPING: true },
+      env: Object.assign({}, process.env, { 
+        ELECTRON_ENABLE_STACK_DUMPING: true,
+      }),
       stdio: 'inherit',
+    });
+    child.on('exit', code => { 
+      console.log(`service process exit (code = ${code})`);
     });
   }
   restartProcess();
