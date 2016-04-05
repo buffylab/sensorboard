@@ -2,6 +2,17 @@ import express from 'express';
 import http from 'http';
 import Io from 'socket.io';
 import bindings from 'bindings';
+import { crashReporter } from 'electron';
+
+if (__DEV__ && process.env.LMDS /* Local mini dump server */) {
+  console.log(`Start crash reporter (target: ${process.env.LMDS})`);
+  crashReporter.start({
+    productName: 'YourName',
+    companyName: 'YourCompany',
+    submitURL: `${process.env.LMDS}/post`,
+    autoSubmit: true,
+  });
+}
 
 const pkg = require('../../package.json');
 
