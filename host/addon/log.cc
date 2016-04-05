@@ -28,7 +28,7 @@ namespace nlog {
   }
 
   void Error(const char *format, ...) {
-    if(g_log_level < LogLevel::LL_ERROR)
+    if(g_log_level > LogLevel::LL_ERROR)
       return;
 
     va_list args;
@@ -38,7 +38,7 @@ namespace nlog {
   }
 
   void Warn(const char *format, ...) {
-    if(g_log_level < LogLevel::LL_WARN)
+    if(g_log_level > LogLevel::LL_WARN)
       return;
 
     va_list args;
@@ -48,7 +48,7 @@ namespace nlog {
   }
 
   void Info(const char *format, ...) {
-    if(g_log_level < LogLevel::LL_INFO)
+    if(g_log_level > LogLevel::LL_INFO)
       return;
 
     va_list args;
@@ -58,7 +58,7 @@ namespace nlog {
   }
 
   void Debug(const char *format, ...) {
-    if(g_log_level < LogLevel::LL_DEBUG)
+    if(g_log_level > LogLevel::LL_DEBUG)
       return;
 
     va_list args;
@@ -68,7 +68,7 @@ namespace nlog {
   }
 
   void Trace(const char *format, ...) {
-    if(g_log_level < LogLevel::LL_TRACE)
+    if(g_log_level > LogLevel::LL_TRACE)
       return;
 
     va_list args;

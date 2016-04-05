@@ -179,6 +179,7 @@ void UsbDevice::Start() {
 
   async_ = new uv_async_t;
   if ((ret = uv_async_init(uv_default_loop(), async_, AsyncCallback)) != 0) {
+    delete async_;
     async_ = nullptr;
 
     state_ = UsbDeviceState::STOPPED;
@@ -192,8 +193,8 @@ void UsbDevice::Start() {
     void *buf = malloc(USB_MRU);
     struct libusb_transfer *transfer = libusb_alloc_transfer(0);
     libusb_fill_bulk_transfer(transfer, handle_, endpoint_in_,
-        reinterpret_cast<unsigned char *>(buf), USB_MRU, 
-	reinterpret_cast<libusb_transfer_cb_fn>(RxCallback), 
+        reinterpret_cast<unsigned char *>(buf), USB_MRU,
+	reinterpret_cast<libusb_transfer_cb_fn>(RxCallback),
 	this, 0);
 
     if((ret = libusb_submit_transfer(transfer)) != 0) {
@@ -446,7 +447,14 @@ void AndroidUsb::Discover() {
   auto it = state_devices_.begin();
   while (it != state_devices_.end()) {
     if (found.find(it->first) == found.end()) {
-      it->second->Destroy();
+      UsbDevice *device = it->second;
+
+      // Check if device has started or not
+      if (device->async_)
+        device->Destroy();
+      else
+        delete device;
+
       state_devices_.erase(it++);
     } else {
       it++;
