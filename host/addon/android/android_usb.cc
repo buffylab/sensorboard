@@ -399,6 +399,7 @@ void AndroidUsb::OnDiscoverRequest(uv_async_t *async) {
 }
 
 void AndroidUsb::Discover() {
+  int ret;
   libusb_device **list;
   ssize_t cnt = libusb_get_device_list(context_, &list);
 
@@ -432,7 +433,10 @@ void AndroidUsb::Discover() {
       }
     } else {
       libusb_device_handle* handle;
-      libusb_open(dev, &handle);
+      if ((ret = libusb_open(dev, &handle)) != 0) {
+        nlog::Warn("libusb_open failed: %s", libusb_error_name(ret));
+        continue;
+      };
       RequestAccessoryMode(desc, handle);
       libusb_close(handle);
 		}
