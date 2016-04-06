@@ -3,6 +3,9 @@
 #include <map>
 #include "log.h"
 #include "android_usb.h"
+#ifdef WIN32
+#include "android_usb_win.h"
+#endif
 
 #define MSG_BUFFER_SIZE                 256
 #define ANDROID_USB_INTERFACE_NUM       0       // Use the first one
@@ -57,6 +60,7 @@ UsbDevice::UsbDevice(
                             , state_(UsbDeviceState::INIT)
                             , error_("")
                             , handle_(nullptr)
+                            , buffer_index_(0)
                             , async_(nullptr) {
   uv_mutex_init(&async_lock_);
 }
@@ -194,8 +198,7 @@ void UsbDevice::Start() {
     struct libusb_transfer *transfer = libusb_alloc_transfer(0);
     libusb_fill_bulk_transfer(transfer, handle_, endpoint_in_,
         reinterpret_cast<unsigned char *>(buf), USB_MRU,
-	reinterpret_cast<libusb_transfer_cb_fn>(RxCallback),
-	this, 0);
+        RxCallback, this, 0);
 
     if((ret = libusb_submit_transfer(transfer)) != 0) {
       libusb_free_transfer(transfer);
@@ -212,7 +215,7 @@ void UsbDevice::Start() {
   state_ = UsbDeviceState::RUNNING;
 }
 
-void UsbDevice::RxCallback(struct libusb_transfer *transfer) {
+void LIBUSB_CALL UsbDevice::RxCallback(struct libusb_transfer *transfer) {
   UsbDevice *device = reinterpret_cast<UsbDevice *>(transfer->user_data);
   if (false == device->HandleRx(transfer)) {
     free(transfer->buffer);
@@ -273,6 +276,8 @@ bool UsbDevice::HandleRx(struct libusb_transfer *transfer) {
 }
 
 void UsbDevice::Destroy() {
+  // TODO: Resource cleanup
+
   uv_close(reinterpret_cast<uv_handle_t*>(async_), AsyncClose);
 }
 
@@ -627,9 +632,9 @@ void AndroidUsb::Start(Nan::Callback *on_update_state, Nan::Callback *on_submit)
     }
   } else {
 #ifdef WIN32
-    // TODO: Windows support
+    InitDetection();
 #else
-    // Start loop
+    // TODO: Polling
 #endif
   }
 

@@ -27,6 +27,9 @@
           'defines':[
             'WIN32_LEAN_AND_MEAN'
           ],
+          'sources': [
+            'addon/android/android_usb_win.cc',
+          ],
           'default_configuration': 'Debug',
           'configurations': {
             'Debug': {

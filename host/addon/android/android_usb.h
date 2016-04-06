@@ -5,8 +5,10 @@
 #define RX_LOOPS_NUM               3
 #define DEVICE_BUFFER_SIZE         (2 * RX_LOOPS_NUM * USB_MRU)
 
+#include <map>
 #include <set>
 #include <libusb.h>
+#include <nan.h>
 
 enum UsbDeviceState {
   INIT,
@@ -24,7 +26,7 @@ private:
   void Init(libusb_device *dev, const libusb_device_descriptor& desc);
   void Start();
 
-  static void RxCallback(struct libusb_transfer *transfer);
+  static void LIBUSB_CALL RxCallback(struct libusb_transfer *transfer);
   bool HandleRx(struct libusb_transfer *transfer);
   void Destroy();
   static void AsyncClose(uv_handle_t *async);
