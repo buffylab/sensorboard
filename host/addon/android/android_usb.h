@@ -55,6 +55,11 @@ private:
 
   uv_async_t *async_;
   uv_mutex_t async_lock_;
+
+  std::string manufacturer_;
+  std::string product_;
+  std::string serial_number_;
+
 };
 
 class AndroidUsb {
@@ -80,6 +85,9 @@ private:
     uint8_t address;
     UsbDeviceState state;
     std::string error;
+    std::string manufacturer;
+    std::string product;
+    std::string serial_number;
   };
 
   AndroidUsb() {}

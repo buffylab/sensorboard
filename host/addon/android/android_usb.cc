@@ -8,6 +8,7 @@
 #endif
 
 #define MSG_BUFFER_SIZE                 256
+#define DESC_BUFFER_SIZE                1024
 #define ANDROID_USB_INTERFACE_NUM       0       // Use the first one
 
 // From ADK1 AndroidAccessory.cpp
@@ -47,6 +48,8 @@ const v8::PropertyAttribute CONST_PROP =
 #define V8STR(str) Nan::New<v8::String>(str).ToLocalChecked()
 #define STRUCT_TO_V8(TARGET, STR, NAME) \
     TARGET->ForceSet(V8STR(#NAME), Nan::New<v8::Uint32>((uint32_t) (STR).NAME), CONST_PROP);
+#define STRUCT_TO_V8_STR(TARGET, STR, NAME) \
+    TARGET->ForceSet(V8STR(#NAME), Nan::New<v8::String>((std::string) (STR).NAME).ToLocalChecked(), CONST_PROP);
 
 /**
  * UsbDevice
@@ -61,7 +64,10 @@ UsbDevice::UsbDevice(
                             , error_("")
                             , handle_(nullptr)
                             , buffer_index_(0)
-                            , async_(nullptr) {
+                            , async_(nullptr)
+                            , manufacturer_("")
+                            , product_("")
+                            , serial_number_("") {
   uv_mutex_init(&async_lock_);
 }
 
@@ -164,6 +170,25 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
   handle_ = handle;
 
   libusb_free_config_descriptor(cdesc);
+
+  unsigned char descbuf[DESC_BUFFER_SIZE];
+  if (desc.iManufacturer != 0) {
+    if ((ret = libusb_get_string_descriptor_ascii(handle, desc.iManufacturer, descbuf, DESC_BUFFER_SIZE)) >= 0) {
+      manufacturer_ = std::string(descbuf, descbuf + ret);
+    }
+  }
+
+  if (desc.iProduct != 0) {
+    if ((ret = libusb_get_string_descriptor_ascii(handle, desc.iProduct, descbuf, DESC_BUFFER_SIZE)) >= 0) {
+      product_ = std::string(descbuf, descbuf + ret);
+    }
+  }
+  
+  if (desc.iSerialNumber != 0) {
+    if ((ret = libusb_get_string_descriptor_ascii(handle, desc.iSerialNumber, descbuf, DESC_BUFFER_SIZE)) >= 0) {
+      serial_number_ = std::string(descbuf, descbuf + ret);
+    }
+  }
 }
 
 void UsbDevice::Start() {
@@ -509,6 +534,9 @@ void AndroidUsb::GetDeviceState(Nan::Callback *callback) {
       device_info.address = device->address_;
       device_info.state = device->state_;
       device_info.error = device->error_;
+      device_info.manufacturer = device->manufacturer_;
+      device_info.product = device->product_;
+      device_info.serial_number = device->serial_number_;
 
       device_infos.push_back(device_info);
     }
@@ -541,13 +569,16 @@ void AndroidUsb::HandleStateOkCallback(const std::vector<UsbDeviceInfo>& device_
   v8::Local<v8::Object> v8_devices = Nan::New<v8::Object>();
 
   for (auto& info : device_infos) {
-  	v8::Local<v8::Object> v8_device = Nan::New<v8::Object>();
+    v8::Local<v8::Object> v8_device = Nan::New<v8::Object>();
     sprintf(buf, "%d_%d", info.bus, info.address);
-  	v8_devices->ForceSet(V8STR(buf), v8_device);
+    v8_devices->ForceSet(V8STR(buf), v8_device);
 
-  	STRUCT_TO_V8(v8_device, info, bus);
-  	STRUCT_TO_V8(v8_device, info, address);
-  	STRUCT_TO_V8(v8_device, info, state);
+    STRUCT_TO_V8(v8_device, info, bus);
+    STRUCT_TO_V8(v8_device, info, address);
+    STRUCT_TO_V8(v8_device, info, state);
+    STRUCT_TO_V8_STR(v8_device, info, manufacturer);
+    STRUCT_TO_V8_STR(v8_device, info, product);
+    STRUCT_TO_V8_STR(v8_device, info, serial_number);
   }
 
   v8::Local<v8::Value> argv[] = {

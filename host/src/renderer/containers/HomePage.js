@@ -9,8 +9,8 @@ const styles = {
     flexDirection: 'row',
   },
   item: {
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 300,
   },
 };
 
@@ -28,7 +28,10 @@ class HomePage extends Component {
       const device = this.props.usbDevices[id];
       return (
         <Paper style={styles.item} key={id}>
-          {id}
+          <div>{id}</div>
+          <div>{device.manufacturer}</div>
+          <div>{device.product}</div>
+          <div>{device.serial_number}</div>
         </Paper>
       );
     });
