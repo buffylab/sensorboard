@@ -14,10 +14,20 @@ const styles = {
   },
 };
 
-@connect(state => ({
-  usbError: state.usb.error,
-  usbDevices: state.usb.devices,
-}))
+@connect(state => {
+  // Filter events
+  const events = {};
+  Object.keys(state.usb.devices).forEach(id => {
+    console.log(state.usb.events);
+    events[id] = state.usb.events[id] || [];
+  });
+
+  return {
+    usbError: state.usb.error,
+    usbDevices: state.usb.devices,
+    usbEvents: events,
+  };
+})
 class HomePage extends Component {
   renderBody() {
     if (this.props.usbError) {
@@ -26,12 +36,23 @@ class HomePage extends Component {
 
     const list = Object.keys(this.props.usbDevices).map(id => {
       const device = this.props.usbDevices[id];
+      const events = this.props.usbEvents[id];
+      const eventList = events.map(event => {
+        return (
+          <div key={event.id}>
+            <div>id: {event.id}</div>
+            <div>data: {event.data}</div>
+          </div>
+        );
+      });
       return (
         <Paper style={styles.item} key={id}>
           <div>{id}</div>
           <div>{device.manufacturer}</div>
           <div>{device.product}</div>
           <div>{device.serial_number}</div>
+          <div>Events</div>
+          <div>{eventList}</div>
         </Paper>
       );
     });

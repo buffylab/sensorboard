@@ -3,10 +3,11 @@ import http from 'http';
 import Io from 'socket.io';
 import bindings from 'bindings';
 import { crashReporter } from 'electron';
+import shortid from 'shortid';
 
 if (__DEV__) {
   console.log(`service process start (pid=${process.pid})`);
-  
+
   if (process.env.LMDS /* Local mini dump server */) {
     console.log(`Start crash reporter (target: ${process.env.LMDS})`);
     crashReporter.start({
@@ -56,7 +57,8 @@ android.start(
   },
 
   // Handle incoming data
-  function (id, data) {
-
+  function (devId, data) {
+    const id = shortid.generate();
+    io.emit('usb:event', { devId, event: { id, data } });
   }
 );
