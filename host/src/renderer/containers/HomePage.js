@@ -18,7 +18,6 @@ const styles = {
   // Filter events
   const events = {};
   Object.keys(state.usb.devices).forEach(id => {
-    console.log(state.usb.events);
     events[id] = state.usb.events[id] || [];
   });
 
