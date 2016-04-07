@@ -6,6 +6,7 @@ import webpack from 'webpack';
 import notifier from 'node-notifier';
 import superb from 'superb'
 import { spawn } from 'child_process';
+import kill from 'tree-kill';
 import {
   root,
   rendererBuildServerPort,
@@ -62,12 +63,62 @@ function buildAddon(debug, done) {
   }).on('close', code => code === 0 ? done() : done(new Error(`exit code = ${code}`)));
 }
 
-gulp.task('build:addon:debug', done => buildAddon(true, done));
-gulp.task('build:addon:release', done => buildAddon(false, done));
+class Proc {
+  constructor(label, script) {
+    this.label = label;
+    this.script = script;
+    this.restarting = false;
+    this.restartReserved = false;
+    this.child = null;
+  }
 
-const electronBinary = path.resolve(root,
+
+  async restart() {
+    try {
+      if (this.restarting) {
+        this.restartReserved = true;
+        return;
+      }
+
+      this.restarting = true;
+      this.restartReserved = false;
+
+      if (this.child) {
+        await new Promise((resolve, reject) => {
+          kill(this.child.pid, 'SIGKILL', err => err ? reject(err) : resolve());
+        });
+        this.child = null;
+      }
+
+      this.child = spawn(Proc.bin, [this.script], {
+        env: Object.assign({}, process.env, {
+          ELECTRON_ENABLE_STACK_DUMPING: true,
+        }),
+      });
+      this.child.stdout.on('data', data => process.stdout.write(data));
+      this.child.stderr.on('data', data => process.stderr.write(data));
+
+      this.child.on('exit', code => {
+        console.log(`${this.label} process exit (code = ${code})`);
+      });
+    } catch(err) {
+      console.error(`Restart failed: ${err}`);
+    }
+
+    this.restarting = false;
+
+    if (this.restartReserved) {
+      return restart();
+    }
+  }
+}
+
+Proc.bin = path.resolve(root,
   os.platform() === 'win32' ? 'node_modules/.bin/electron.cmd' : 'node_modules/.bin/electron'
 );
+
+gulp.task('build:addon:debug', done => buildAddon(true, done));
+gulp.task('build:addon:release', done => buildAddon(false, done));
 
 gulp.task('run:renderer', () => {
   const { default: runHotServer } = require('./runHotServer');
@@ -91,17 +142,12 @@ gulp.task('run:main', ['run:renderer'], async () => {
   const output = path.join(config.output.path, config.output.filename);
   let child;
 
-  function restartProcess() {
-    if (child) child.kill();
-    child = spawn(electronBinary, [output]);
-    child.stdout.on('data', data => process.stdout.write(data));
-    child.stderr.on('data', data => process.stderr.write(data));
-  }
-  restartProcess();
+  const proc = new Proc('main', output);
+  proc.restart();
 
   gulp.watch(output).on('change', () => {
     gutil.log('Restart main...');
-    restartProcess();
+    proc.restart();
   });
 });
 
@@ -119,26 +165,13 @@ gulp.task('run:service', async () => {
   });
 
   const output = `${config.output.path}/${config.output.filename}`;
-  let child;
 
-  function restartProcess() {
-    if (child) child.kill();
-    child = spawn(electronBinary, [output], {
-      env: Object.assign({}, process.env, {
-        ELECTRON_ENABLE_STACK_DUMPING: true,
-      }),
-    });
-    child.stdout.on('data', data => process.stdout.write(data));
-    child.stderr.on('data', data => process.stderr.write(data));
-    child.on('exit', code => {
-      console.log(`service process exit (code = ${code})`);
-    });
-  }
-  restartProcess();
+  const proc = new Proc('service', output);
+  proc.restart();
 
   gulp.watch(output).on('change', () => {
     gutil.log('Restart service...');
-    restartProcess();
+    proc.restart();
   });
 });
 

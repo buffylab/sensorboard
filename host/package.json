@@ -17,6 +17,8 @@
     "build:service": "webpack --config webpack/service.prod.js --progress --profile --colors",
     "build": "npm run build:addon && npm run build:main && npm run build:renderer && npm run build:service",
     "prepublish": "electron-rebuild && npm run build",
+    "run:main": "gulp run:main",
+    "run:srv": "gulp run:service",
     "start": "gulp run"
   },
   "repository": {
@@ -87,6 +89,7 @@
     "sinon": "^1.17.3",
     "style-loader": "^0.13.1",
     "superb": "^1.3.0",
+    "tree-kill": "^1.0.0",
     "url-loader": "^0.5.7",
     "webpack": "^1.12.14",
     "webpack-dev-middleware": "^1.6.1",
