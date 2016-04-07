@@ -27,6 +27,8 @@ const babelOptions = JSON.stringify({
 });
 
 const webpackConfig = {
+  target: 'web',
+
   entry: [
     'webpack-hot-middleware/client?path=http://localhost:3000/__webpack_hmr',
     `${root}/src/renderer/entry`,
@@ -68,5 +70,4 @@ const webpackConfig = {
   devtool: 'cheap-module-eval-source-map',
 };
 
-webpackConfig.target = webpackTargetElectronRenderer(webpackConfig);
 module.exports = webpackConfig;
