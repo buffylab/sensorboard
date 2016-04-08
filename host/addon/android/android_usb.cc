@@ -11,6 +11,10 @@
 #define DESC_BUFFER_SIZE                1024
 #define ANDROID_USB_INTERFACE_NUM       0       // Use the first one
 
+#define ACCESSORY_MANUFACTURER          "Buffylabs"
+#define ACCESSORY_MODEL                 "Sensorboard"
+#define ACCESSORY_VERSION               "0.1.0"
+
 // From ADK1 AndroidAccessory.cpp
 
 #define USB_ACCESSORY_VENDOR_ID         0x18D1
@@ -183,7 +187,7 @@ void UsbDevice::Init(libusb_device *dev, const libusb_device_descriptor& desc) {
       product_ = std::string(descbuf, descbuf + ret);
     }
   }
-  
+
   if (desc.iSerialNumber != 0) {
     if ((ret = libusb_get_string_descriptor_ascii(handle, desc.iSerialNumber, descbuf, DESC_BUFFER_SIZE)) >= 0) {
       serial_number_ = std::string(descbuf, descbuf + ret);
@@ -383,10 +387,10 @@ bool AndroidUsb::RequestAccessoryMode(const libusb_device_descriptor& dd, libusb
     return false;
   }
 
-  SendString(handle, ACCESSORY_STRING_MANUFACTURER, "manufacturer");
-  SendString(handle, ACCESSORY_STRING_MODEL, "model");
+  SendString(handle, ACCESSORY_STRING_MANUFACTURER, ACCESSORY_MANUFACTURER);
+  SendString(handle, ACCESSORY_STRING_MODEL, ACCESSORY_MODEL);
   SendString(handle, ACCESSORY_STRING_DESCRIPTION, "description");
-  SendString(handle, ACCESSORY_STRING_VERSION, "version");
+  SendString(handle, ACCESSORY_STRING_VERSION, ACCESSORY_VERSION);
   SendString(handle, ACCESSORY_STRING_URI, "uri");
   SendString(handle, ACCESSORY_STRING_SERIAL, "serial");
 

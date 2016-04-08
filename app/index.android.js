@@ -8,10 +8,18 @@ import React, {
   Component,
   StyleSheet,
   Text,
-  View
+  View,
+  TouchableHighlight,
+  NativeModules,
 } from 'react-native';
 
+const { Usb } = NativeModules;
+
 class SensorboardApp extends Component {
+  handleButtonClick() {
+    Usb.send(JSON.stringify({ message: 'Hello from React Native!' }));
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -24,6 +32,13 @@ class SensorboardApp extends Component {
         <Text style={styles.instructions}>
           Shake or press menu button for dev menu
         </Text>
+        <TouchableHighlight onPress={() => this.handleButtonClick()}
+                            activeOpacity={75 / 100}
+                            underlayColor={"rgb(110, 110, 110)"}
+                            style={styles.button}
+        >
+          <Text>Press</Text>
+        </TouchableHighlight>
       </View>
     );
   }
@@ -45,6 +60,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#333333',
     marginBottom: 5,
+  },
+  button: {
+    backgroundColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10
   },
 });
 
