@@ -37,10 +37,11 @@ class HomePage extends Component {
       const device = this.props.usbDevices[id];
       const events = this.props.usbEvents[id];
       const eventList = events.map(event => {
+        const data = JSON.stringify(event.data);
         return (
           <div key={event.id}>
             <div>id: {event.id}</div>
-            <div>data: {event.data}</div>
+            <div>data: {data}</div>
           </div>
         );
       });

@@ -12,6 +12,7 @@ export default function routeEvents(store) {
   });
 
   socket.on('usb:event', ({ devId, event }) => {
+    console.log(event);
     store.dispatch(receiveUsbEvent(devId, event));
   });
 };

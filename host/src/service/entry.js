@@ -50,6 +50,8 @@ app.get('/', (req, res) => {
 server.listen(7000);
 console.log(`Listening at ${7000}`);
 
+const usbBuffers = {};
+
 android.start(
   // Handle device info update
   function(error, devices) {
@@ -58,7 +60,25 @@ android.start(
 
   // Handle incoming data
   function (devId, data) {
-    const id = shortid.generate();
-    io.emit('usb:event', { devId, event: { id, data } });
+    const buffer = (usbBuffers[devId] || '') + data;
+
+    let fromIndex = 0;
+    let index;
+
+    while((index = buffer.indexOf(';', fromIndex)) !== -1) {
+      const chunk = buffer.substr(fromIndex, index - fromIndex);
+      fromIndex = index + 1;
+
+      try {
+        const json = JSON.parse(chunk)
+        const id = shortid.generate();
+        io.emit('usb:event', { devId, event: { id, data: json } });
+      } catch(err) {
+        console.error(err);
+      }
+    }
+
+    // Store unsent data
+    usbBuffers[devId] = buffer.substr(fromIndex);
   }
 );
